@@ -1,1 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <title>AI Edit Studio</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0b12;
+      color: white;
+    }
+
+    .container {
+      width: 92%;
+      max-width: 900px;
+      margin: auto;
+      padding: 30px 0 50px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #151520;
+      border: 1px solid #29293a;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #333348;
+      padding: 12px;
+      background: #0e0e17;
+      color: white;
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+    }
+
+    button {
+      cursor: pointer;
+      background: #6c4cff;
+      border: none;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #10101a;
+      color: #bbb;
+      white-space: pre-wrap;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 360px;
+      display: block;
+      margin: 20px auto;
+      background: black;
+      border-radius: 12px;
+    }
+
+    video {
+      width: 100%;
+      max-width: 360px;
+      display: block;
+      margin: 20px auto;
+      border-radius: 12px;
+      background: black;
+    }
+
+    .plan {
+      background: #0e0e17;
+      border-radius: 10px;
+      padding: 15px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      color: #ddd;
+    }
+
+    @media (max-width: 650px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>✨ AI Edit Studio</h1>
+
+  <div class="subtitle">
+    AI-powered short video editor
+  </div>
+
+  <!-- MEDIA -->
+  <div class="card">
+
+    <label>Select Photos / Videos</label>
+
+    <input
+      id="mediaInput"
+      type="file"
+      accept="image/*,video/*"
+      multiple
+    />
+
+    <div id="mediaStatus" class="status">
+      No media selected.
+    </div>
+
+  </div>
+
+  <!-- MUSIC -->
+  <div class="card">
+
+    <label>Select Music</label>
+
+    <input
+      id="musicInput"
+      type="file"
+      accept="audio/*"
+    />
+
+    <div id="musicStatus" class="status">
+      No music selected.
+    </div>
+
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="card">
+
+    <div class="grid">
+
+      <div>
+        <label>Style</label>
+
+        <select id="style">
+          <option value="cinematic">Cinematic</option>
+          <option value="energetic">Energetic</option>
+          <option value="minimal">Minimal</option>
+          <option value="devotional">Devotional</option>
+          <option value="travel">Travel</option>
+          <option value="birthday">Birthday</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Duration</label>
+
+        <select id="duration">
+          <option value="15">15 seconds</option>
+          <option value="30" selected>30 seconds</option>
+          <option value="45">45 seconds</option>
+          <option value="60">60 seconds</option>
+        </select>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- PROMPT -->
+  <div class="card">
+
+    <label>Tell AI how you want the edit</label>
+
+    <textarea
+      id="prompt"
+      placeholder="Example: Make a cinematic birthday reel with smooth transitions and energetic music."
+    ></textarea>
+
+    <button id="generateBtn">
+      ✨ Generate AI Edit Plan
+    </button>
+
+    <div id="status" class="status">
+      Ready.
+    </div>
+
+  </div>
+
+  <!-- PLAN -->
+  <div class="card">
+
+    <h3>AI Edit Plan</h3>
+
+    <div id="plan" class="plan">
+      No plan generated yet.
+    </div>
+
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="card">
+
+    <h3>Preview</h3>
+
+    <canvas
+      id="canvas"
+      width="360"
+      height="640"
+    ></canvas>
+
+    <button id="previewBtn">
+      ▶ Render Preview
+    </button>
+
+    <button id="exportBtn">
+      ⬇ Export Video
+    </button>
+
+    <video
+      id="resultVideo"
+      controls
+      style="display:none;"
+    ></video>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================
+   BACKEND
+========================= */
+
+const BACKEND_URL =
+  "https://edits-ai.onrender.com";
+
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const mediaInput =
+  document.getElementById("mediaInput");
+
+const musicInput =
+  document.getElementById("musicInput");
+
+const mediaStatus =
+  document.getElementById("mediaStatus");
+
+const musicStatus =
+  document.getElementById("musicStatus");
+
+const generateBtn =
+  document.getElementById("generateBtn");
+
+const previewBtn =
+  document.getElementById("previewBtn");
+
+const exportBtn =
+  document.getElementById("exportBtn");
+
+const statusBox =
+  document.getElementById("status");
+
+const planBox =
+  document.getElementById("plan");
+
+const canvas =
+  document.getElementById("canvas");
+
+const ctx =
+  canvas.getContext("2d");
+
+const resultVideo =
+  document.getElementById("resultVideo");
+
+
+/* =========================
+   STATE
+========================= */
+
+let mediaFiles = [];
+
+let musicFile = null;
+
+let editPlan = null;
+
+let recordedBlob = null;
+
+
+/* =========================
+   MEDIA
+========================= */
+
+mediaInput.addEventListener(
+  "change",
+  () => {
+
+    mediaFiles =
+      Array.from(
+        mediaInput.files || []
+      );
+
+    mediaStatus.textContent =
+      mediaFiles.length
+        ? `${mediaFiles.length} media file(s) selected.`
+        : "No media selected.";
+
+  }
+);
+
+
+/* =========================
+   MUSIC
+========================= */
+
+musicInput.addEventListener(
+  "change",
+  () => {
+
+    musicFile =
+      musicInput.files?.[0] || null;
+
+    musicStatus.textContent =
+      musicFile
+        ? `Music: ${musicFile.name}`
+        : "No music selected.";
+
+  }
+);
+
+
+/* =========================
+   GENERATE AI PLAN
+========================= */
+
+generateBtn.addEventListener(
+  "click",
+  generatePlan
+);
+
+
+async function generatePlan() {
+
+  if (!mediaFiles.length) {
+
+    statusBox.textContent =
+      "Please select at least one photo or video.";
+
+    return;
+  }
+
+  const style =
+    document.getElementById("style").value;
+
+  const duration =
+    Number(
+      document.getElementById("duration").value
+    );
+
+  const prompt =
+    document.getElementById("prompt").value.trim();
+
+
+  statusBox.textContent =
+    "✨ Asking AI to create your edit plan...";
+
+  generateBtn.disabled = true;
+
+
+  const media =
+    mediaFiles.map(
+      (file, index) => ({
+
+        name: file.name,
+
+        type: file.type,
+
+        duration: null,
+
+        index
+
+      })
+    );
+
+
+  const music =
+    musicFile
+      ? {
+          name: musicFile.name,
+          type: musicFile.type
+        }
+      : null;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${BACKEND_URL}/generate-plan`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            prompt,
+
+            style,
+
+            duration,
+
+            media,
+
+            music
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Backend error"
+      );
+
+    }
+
+
+    editPlan = data;
+
+
+    planBox.textContent =
+      JSON.stringify(
+        data,
+        null,
+        2
+      );
+
+
+    statusBox.textContent =
+      "✅ AI Edit Plan generated successfully!";
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    statusBox.textContent =
+      "⚠️ AI server unavailable. Creating a local Smart Edit Plan...";
+
+
+    editPlan =
+      createLocalPlan(
+        mediaFiles,
+        duration,
+        style,
+        musicFile
+      );
+
+
+    planBox.textContent =
+      JSON.stringify(
+        editPlan,
+        null,
+        2
+      );
+
+  }
+
+
+  generateBtn.disabled = false;
+
+}
+
+
+/* =========================
+   LOCAL FALLBACK
+========================= */
+
+function createLocalPlan(
+  files,
+  duration,
+  style,
+  music
+) {
+
+  const clipDuration =
+    duration /
+    Math.max(files.length, 1);
+
+
+  const clips =
+    files.map(
+      (file, index) => ({
+
+        mediaIndex: index,
+
+        start:
+          index *
+          clipDuration,
+
+        duration:
+          clipDuration,
+
+        effect:
+          file.type.startsWith("image")
+            ? "ken_burns"
+            : "none",
+
+        transition:
+          index === 0
+            ? "none"
+            : "fade",
+
+        speed:
+          file.type.startsWith("video")
+            ? 1
+            : 1,
+
+        crop:
+          "cover"
+
+      })
+    );
+
+
+  return {
+
+    version: 1,
+
+    aspectRatio: "9:16",
+
+    duration,
+
+    style,
+
+    clips,
+
+    music: {
+
+      enabled: !!music,
+
+      volume: 0.6,
+
+      startAt: 0
+
+    },
+
+    text: [],
+
+    color: {
+
+      filter:
+        style === "cinematic"
+          ? "cinematic"
+          : "normal"
+
+    }
+
+  };
+
+}
+
+
+/* =========================
+   PREVIEW
+========================= */
+
+previewBtn.addEventListener(
+  "click",
+  () => {
+
+    if (!editPlan) {
+
+      statusBox.textContent =
+        "Generate an AI Edit Plan first.";
+
+      return;
+
+    }
+
+
+    statusBox.textContent =
+      "🎬 Rendering preview...";
+
+
+    renderVideo(false);
+
+  }
+);
+
+
+/* =========================
+   EXPORT
+========================= */
+
+exportBtn.addEventListener(
+  "click",
+  () => {
+
+    if (!editPlan) {
+
+      statusBox.textContent =
+        "Generate an AI Edit Plan first.";
+
+      return;
+
+    }
+
+
+    renderVideo(true);
+
+  }
+);
+
+
+/* =========================
+   RENDER
+========================= */
+
+async function renderVideo(
+  exportVideo
+) {
+
+  if (!mediaFiles.length) return;
+
+
+  canvas.width = 360;
+  canvas.height = 640;
+
+
+  const stream =
+    canvas.captureStream(30);
+
+
+  let mimeType =
+    "video/webm;codecs=vp9";
+
+
+  if (
+    !MediaRecorder.isTypeSupported(
+      mimeType
+    )
+  ) {
+
+    mimeType =
+      "video/webm";
+
+  }
+
+
+  const recorder =
+    new MediaRecorder(
+      stream,
+      {
+        mimeType
+      }
+    );
+
+
+  const chunks = [];
+
+
+  recorder.ondataavailable =
+    event => {
+
+      if (event.data.size > 0) {
+        chunks.push(event.data);
+      }
+
+    };
+
+
+  recorder.onstop =
+    () => {
+
+      recordedBlob =
+        new Blob(
+          chunks,
+          {
+            type: mimeType
+          }
+        );
+
+
+      const url =
+        URL.createObjectURL(
+          recordedBlob
+        );
+
+
+      resultVideo.src = url;
+
+      resultVideo.style.display =
+        "block";
+
+
+      statusBox.textContent =
+        exportVideo
+          ? "✅ Video exported!"
+          : "✅ Preview ready.";
+
+
+      if (exportVideo) {
+
+        const link =
+          document.createElement("a");
+
+        link.href = url;
+
+        link.download =
+          "ai-edit-studio.webm";
+
+        link.click();
+
+      }
+
+    };
+
+
+  recorder.start();
+
+
+  const totalDuration =
+    editPlan.duration;
+
+
+  const startTime =
+    performance.now();
+
+
+  async function drawFrame() {
+
+    const elapsed =
+      (
+        performance.now() -
+        startTime
+      ) / 1000;
+
+
+    if (
+      elapsed >=
+      totalDuration
+    ) {
+
+      recorder.stop();
+
+      return;
+
+    }
+
+
+    const clip =
+      findClip(
+        elapsed
+      );
+
+
+    if (clip) {
+
+      const file =
+        mediaFiles[
+          clip.mediaIndex
+        ];
+
+
+      await drawMedia(
+        file,
+        elapsed -
+          clip.start,
+        clip
+      );
+
+    }
+
+
+    requestAnimationFrame(
+      drawFrame
+    );
+
+  }
+
+
+  drawFrame();
+
+}
+
+
+/* =========================
+   FIND CURRENT CLIP
+========================= */
+
+function findClip(
+  time
+) {
+
+  return editPlan.clips.find(
+    clip =>
+      time >= clip.start &&
+      time <
+        clip.start +
+        clip.duration
+  );
+
+}
+
+
+/* =========================
+   DRAW MEDIA
+========================= */
+
+async function drawMedia(
+  file,
+  localTime,
+  clip
+) {
+
+  if (
+    file.type.startsWith("image/")
+  ) {
+
+    await drawImage(
+      file,
+      localTime,
+      clip
+    );
+
+    return;
+
+  }
+
+
+  if (
+    file.type.startsWith("video/")
+  ) {
+
+    await drawVideo(
+      file,
+      localTime,
+      clip
+    );
+
+    return;
+
+  }
+
+
+  drawBackground();
+
+}
+
+
+/* =========================
+   IMAGE
+========================= */
+
+function drawImage(
+  file,
+  localTime,
+  clip
+) {
+
+  return new Promise(
+    resolve => {
+
+      const img =
+        new Image();
+
+
+      img.onload =
+        () => {
+
+          ctx.fillStyle =
+            "black";
+
+          ctx.fillRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+
+          const scale =
+            Math.max(
+              canvas.width /
+                img.width,
+
+              canvas.height /
+                img.height
+            );
+
+
+          const zoom =
+            1 +
+            Math.min(
+              localTime /
+                Math.max(
+                  clip.duration,
+                  0.1
+                ),
+              1
+            ) *
+            0.08;
+
+
+          const width =
+            img.width *
+            scale *
+            zoom;
+
+
+          const height =
+            img.height *
+            scale *
+            zoom;
+
+
+          const x =
+            (
+              canvas.width -
+              width
+            ) / 2;
+
+
+          const y =
+            (
+              canvas.height -
+              height
+            ) / 2;
+
+
+          ctx.drawImage(
+            img,
+            x,
+            y,
+            width,
+            height
+          );
+
+
+          resolve();
+
+        };
+
+
+      img.onerror =
+        () => {
+
+          drawBackground();
+
+          resolve();
+
+        };
+
+
+      img.src =
+        URL.createObjectURL(
+          file
+        );
+
+    }
+  );
+
+}
+
+
+/* =========================
+   VIDEO
+========================= */
+
+function drawVideo(
+  file,
+  localTime,
+  clip
+) {
+
+  return new Promise(
+    resolve => {
+
+      const video =
+        document.createElement(
+          "video"
+        );
+
+
+      video.muted = true;
+
+      video.playsInline = true;
+
+      video.preload = "auto";
+
+
+      video.onloadedmetadata =
+        async () => {
+
+          try {
+
+            video.currentTime =
+              Math.max(
+                0,
+                Math.min(
+                  localTime,
+                  video.duration || localTime
+                )
+              );
+
+
+            video.onseeked =
+              () => {
+
+                drawVideoFrame(
+                  video
+                );
+
+                resolve();
+
+              };
+
+
+          } catch {
+
+            drawBackground();
+
+            resolve();
+
+          }
+
+        };
+
+
+      video.onerror =
+        () => {
+
+          drawBackground();
+
+          resolve();
+
+        };
+
+
+      video.src =
+        URL.createObjectURL(
+          file
+        );
+
+    }
+  );
+
+}
+
+
+function drawVideoFrame(
+  video
+) {
+
+  ctx.fillStyle =
+    "black";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  const scale =
+    Math.max(
+      canvas.width /
+        video.videoWidth,
+
+      canvas.height /
+        video.videoHeight
+    );
+
+
+  const width =
+    video.videoWidth *
+    scale;
+
+
+  const height =
+    video.videoHeight *
+    scale;
+
+
+  const x =
+    (
+      canvas.width -
+      width
+    ) / 2;
+
+
+  const y =
+    (
+      canvas.height -
+      height
+    ) / 2;
+
+
+  ctx.drawImage(
+    video,
+    x,
+    y,
+    width,
+    height
+  );
+
+}
+
+
+/* =========================
+   BACKGROUND
+========================= */
+
+function drawBackground() {
+
+  ctx.fillStyle =
+    "black";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+}
+
+</script>
+
+</body>
+      </html>
