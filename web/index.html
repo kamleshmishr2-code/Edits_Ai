@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
+  <meta name="theme-color" content="#09090d">
+
+  <title>AI Edit Studio</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #09090d;
+      color: white;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 680px;
+      margin: auto;
+      padding: 18px;
+    }
+
+    header {
+      text-align: center;
+      padding: 15px 0 25px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      color: #999;
+      font-size: 14px;
+      margin-top: 7px;
+    }
+
+    .card {
+      background: #14141b;
+      border: 1px solid #282832;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      background: #0e0e14;
+      border: 1px solid #30303b;
+      color: white;
+      border-radius: 12px;
+      padding: 13px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+    }
+
+    select {
+      appearance: auto;
+    }
+
+    .small {
+      color: #777;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 7px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .styles {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .style {
+      background: #0e0e14;
+      border: 1px solid #30303b;
+      border-radius: 12px;
+      padding: 13px 8px;
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .style.active {
+      background: #262631;
+      border-color: white;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 13px;
+      padding: 15px;
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      background: white;
+      color: black;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .secondary {
+      background: #252530;
+      color: white;
+    }
+
+    .danger {
+      background: #301818;
+      color: #ffb5b5;
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #0e0e14;
+      color: #aaa;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .media-list {
+      margin-top: 10px;
+    }
+
+    .media-item {
+      padding: 9px 0;
+      border-bottom: 1px solid #25252e;
+      font-size: 13px;
+      color: #aaa;
+      word-break: break-word;
+    }
+
+    video {
+      width: 100%;
+      max-height: 650px;
+      border-radius: 16px;
+      background: black;
+      display: none;
+      margin-top: 12px;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    pre {
+      background: #09090d;
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      max-height: 350px;
+      font-size: 11px;
+      color: #bbb;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .success {
+      color: #a8ffbd;
+    }
+
+    .warning {
+      color: #ffd98a;
+    }
+
+    .error {
+      color: #ffaaaa;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+
+  <header>
+    <h1>AI Edit Studio</h1>
+    <div class="subtitle">
+      Create Reels with AI
+    </div>
+  </header>
+
+
+  <!-- MEDIA -->
+
+  <div class="card">
+
+    <div class="title">
+      1. Select Media
+    </div>
+
+    <input
+      id="mediaInput"
+      type="file"
+      accept="image/*,video/*"
+      multiple
+    >
+
+    <div class="small">
+      Select photos and videos from your phone.
+    </div>
+
+    <div
+      id="mediaList"
+      class="media-list"
+    ></div>
+
+  </div>
+
+
+  <!-- MUSIC -->
+
+  <div class="card">
+
+    <div class="title">
+      2. Add Music
+    </div>
+
+    <input
+      id="musicInput"
+      type="file"
+      accept="audio/*"
+    >
+
+    <div
+      id="musicName"
+      class="small"
+    >
+      No music selected
+    </div>
+
+  </div>
+
+
+  <!-- PROMPT -->
+
+  <div class="card">
+
+    <div class="title">
+      3. Tell AI What To Do
+    </div>
+
+    <textarea
+      id="prompt"
+      placeholder="Example: Make a cinematic Instagram reel with smooth transitions, slow zooms and a premium look."
+    ></textarea>
+
+  </div>
+
+
+  <!-- STYLE -->
+
+  <div class="card">
+
+    <div class="title">
+      4. Choose Style
+    </div>
+
+    <div class="styles">
+
+      <div
+        class="style active"
+        data-style="cinematic"
+      >
+        🎬 Cinematic
+      </div>
+
+      <div
+        class="style"
+        data-style="energetic"
+      >
+        ⚡ Energetic
+      </div>
+
+      <div
+        class="style"
+        data-style="minimal"
+      >
+        ✨ Minimal
+      </div>
+
+      <div
+        class="style"
+        data-style="devotional"
+      >
+        🪷 Devotional
+      </div>
+
+      <div
+        class="style"
+        data-style="travel"
+      >
+        🌍 Travel
+      </div>
+
+      <div
+        class="style"
+        data-style="birthday"
+      >
+        🎂 Birthday
+      </div>
+
+      <div
+        class="style"
+        data-style="trending"
+      >
+        🔥 Trending
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- SETTINGS -->
+
+  <div class="card">
+
+    <div class="title">
+      5. Video Settings
+    </div>
+
+    <div class="grid">
+
+      <div>
+
+        <div class="small">
+          Duration
+        </div>
+
+        <select id="duration">
+
+          <option value="15">
+            15 seconds
+          </option>
+
+          <option
+            value="30"
+            selected
+          >
+            30 seconds
+          </option>
+
+          <option value="45">
+            45 seconds
+          </option>
+
+          <option value="60">
+            60 seconds
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div>
+
+        <div class="small">
+          Format
+        </div>
+
+        <select disabled>
+
+          <option>
+            9:16 Vertical
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- AI PLAN -->
+
+  <div class="card">
+
+    <div class="title">
+      6. AI Edit Plan
+    </div>
+
+    <button
+      id="generateBtn"
+    >
+      ✨ Generate AI Edit Plan
+    </button>
+
+    <div
+      id="status"
+      class="status"
+    >
+      Ready
+    </div>
+
+  </div>
+
+
+  <!-- PLAN OUTPUT -->
+
+  <div
+    class="card"
+    id="planCard"
+    style="display:none"
+  >
+
+    <div class="title">
+      AI Edit Plan
+    </div>
+
+    <pre id="planOutput"></pre>
+
+  </div>
+
+
+  <!-- RENDER -->
+
+  <div class="card">
+
+    <div class="title">
+      7. Preview & Export
+    </div>
+
+    <button
+      id="renderBtn"
+      class="secondary"
+      disabled
+    >
+      ▶ Render Preview
+    </button>
+
+    <video
+      id="previewVideo"
+      controls
+      playsinline
+    ></video>
+
+    <button
+      id="exportBtn"
+      class="secondary"
+      style="display:none"
+    >
+      ⬇ Export Video
+    </button>
+
+  </div>
+
+
+  <canvas
+    id="canvas"
+    width="540"
+    height="960"
+  ></canvas>
+
+</div>
+
+
+<script>
+
+
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+
+const BACKEND_URL =
+  "https://edits-ai.onrender.com";
+
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+
+const mediaInput =
+  document.getElementById("mediaInput");
+
+const musicInput =
+  document.getElementById("musicInput");
+
+const mediaList =
+  document.getElementById("mediaList");
+
+const musicName =
+  document.getElementById("musicName");
+
+const promptInput =
+  document.getElementById("prompt");
+
+const durationInput =
+  document.getElementById("duration");
+
+const generateBtn =
+  document.getElementById("generateBtn");
+
+const renderBtn =
+  document.getElementById("renderBtn");
+
+const exportBtn =
+  document.getElementById("exportBtn");
+
+const statusBox =
+  document.getElementById("status");
+
+const planCard =
+  document.getElementById("planCard");
+
+const planOutput =
+  document.getElementById("planOutput");
+
+const previewVideo =
+  document.getElementById("previewVideo");
+
+const canvas =
+  document.getElementById("canvas");
+
+const ctx =
+  canvas.getContext("2d");
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let selectedStyle =
+  "cinematic";
+
+let selectedMedia =
+  [];
+
+let selectedMusic =
+  null;
+
+let currentPlan =
+  null;
+
+let renderedBlob =
+  null;
+
+const imageCache =
+  new Map();
+
+const videoCache =
+  new Map();
+
+
+/* ============================================================
+   STYLE SELECTION
+   ============================================================ */
+
+document
+  .querySelectorAll(".style")
+  .forEach(element => {
+
+    element.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(".style")
+          .forEach(item => {
+
+            item.classList.remove(
+              "active"
+            );
+
+          });
+
+        element.classList.add(
+          "active"
+        );
+
+        selectedStyle =
+          element.dataset.style;
+
+      }
+    );
+
+  });
+
+
+/* ============================================================
+   MEDIA SELECTION
+   ============================================================ */
+
+mediaInput.addEventListener(
+  "change",
+  () => {
+
+    selectedMedia =
+      Array.from(
+        mediaInput.files || []
+      );
+
+    mediaList.innerHTML = "";
+
+    selectedMedia.forEach(
+      (file, index) => {
+
+        const item =
+          document.createElement(
+            "div"
+          );
+
+        item.className =
+          "media-item";
+
+        item.textContent =
+          `${index + 1}. ${file.name}`;
+
+        mediaList.appendChild(
+          item
+        );
+
+      }
+    );
+
+    if (
+      selectedMedia.length > 0
+    ) {
+
+      setStatus(
+        `${selectedMedia.length} media file(s) selected.`,
+        "success"
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   MUSIC SELECTION
+   ============================================================ */
+
+musicInput.addEventListener(
+  "change",
+  () => {
+
+    selectedMusic =
+      musicInput.files[0] ||
+      null;
+
+    if (selectedMusic) {
+
+      musicName.textContent =
+        `Selected: ${selectedMusic.name}`;
+
+    } else {
+
+      musicName.textContent =
+        "No music selected";
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   STATUS
+   ============================================================ */
+
+function setStatus(
+  message,
+  type = ""
+) {
+
+  statusBox.textContent =
+    message;
+
+  statusBox.className =
+    "status";
+
+  if (type) {
+
+    statusBox.classList.add(
+      type
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   MEDIA METADATA
+   ============================================================ */
+
+async function getMediaMetadata(
+  files
+) {
+
+  const result =
+    [];
+
+  for (
+    let i = 0;
+    i < files.length;
+    i++
+  ) {
+
+    const file =
+      files[i];
+
+    let duration =
+      null;
+
+    if (
+      file.type.startsWith(
+        "video/"
+      )
+    ) {
+
+      duration =
+        await new Promise(
+          resolve => {
+
+            const video =
+              document.createElement(
+                "video"
+              );
+
+            const url =
+              URL.createObjectURL(
+                file
+              );
+
+            video.preload =
+              "metadata";
+
+            video.onloadedmetadata =
+              () => {
+
+                const value =
+                  video.duration;
+
+                URL.revokeObjectURL(
+                  url
+                );
+
+                resolve(
+                  Number.isFinite(
+                    value
+                  )
+                    ? value
+                    : null
+                );
+
+              };
+
+            video.onerror =
+              () => {
+
+                URL.revokeObjectURL(
+                  url
+                );
+
+                resolve(
+                  null
+                );
+
+              };
+
+            video.src =
+              url;
+
+          }
+        );
+
+    }
+
+    result.push({
+
+      index: i,
+
+      name:
+        file.name,
+
+      type:
+        file.type,
+
+      size:
+        file.size,
+
+      duration:
+        duration
+
+    });
+
+  }
+
+  return result;
+
+}
+
+
+/* ============================================================
+   PLAN VALIDATION
+   ============================================================ */
+
+function validatePlan(
+  plan
+) {
+
+  if (
+    !plan ||
+    typeof plan !== "object"
+  ) {
+
+    throw new Error(
+      "Invalid AI plan."
+    );
+
+  }
+
+  if (
+    plan.version !== 1
+  ) {
+
+    throw new Error(
+      "Invalid plan version."
+    );
+
+  }
+
+  if (
+    plan.aspectRatio !==
+    "9:16"
+  ) {
+
+    throw new Error(
+      "Invalid aspect ratio."
+    );
+
+  }
+
+  if (
+    !Array.isArray(
+      plan.clips
+    )
+  ) {
+
+    throw new Error(
+      "Invalid clips."
+    );
+
+  }
+
+  const duration =
+    Number(
+      durationInput.value
+    );
+
+  if (
+    Number(plan.duration) !==
+    duration
+  ) {
+
+    throw new Error(
+      "AI returned wrong duration."
+    );
+
+  }
+
+  for (
+    const clip of plan.clips
+  ) {
+
+    if (
+      !Number.isInteger(
+        clip.mediaIndex
+      ) ||
+      clip.mediaIndex < 0 ||
+      clip.mediaIndex >=
+        selectedMedia.length
+    ) {
+
+      throw new Error(
+        "Invalid media index."
+      );
+
+    }
+
+    if (
+      typeof clip.start !==
+        "number" ||
+      typeof clip.duration !==
+        "number" ||
+      clip.start < 0 ||
+      clip.duration <= 0
+    ) {
+
+      throw new Error(
+        "Invalid clip timing."
+      );
+
+    }
+
+    if (
+      clip.start +
+        clip.duration >
+        duration + 0.1
+    ) {
+
+      throw new Error(
+        "Clip exceeds duration."
+      );
+
+    }
+
+  }
+
+  return true;
+
+}
+
+
+/* ============================================================
+   LOCAL FALLBACK
+   ============================================================ */
+
+function createFallbackPlan() {
+
+  const totalDuration =
+    Number(
+      durationInput.value
+    );
+
+  const count =
+    selectedMedia.length;
+
+  const clipDuration =
+    totalDuration /
+    count;
+
+  const clips =
+    [];
+
+  for (
+    let i = 0;
+    i < count;
+    i++
+  ) {
+
+    clips.push({
+
+      mediaIndex:
+        i,
+
+      start:
+        i * clipDuration,
+
+      duration:
+        clipDuration,
+
+      effect:
+        i % 2 === 0
+          ? "zoom_in"
+          : "zoom_out",
+
+      transition:
+        i === 0
+          ? "none"
+          : "crossfade",
+
+      speed:
+        1,
+
+      crop:
+        "cover"
+
+    });
+
+  }
+
+  return {
+
+    version:
+      1,
+
+    aspectRatio:
+      "9:16",
+
+    duration:
+      totalDuration,
+
+    style:
+      selectedStyle,
+
+    clips:
+      clips,
+
+    music: {
+
+      enabled:
+        !!selectedMusic,
+
+      volume:
+        0.35,
+
+      startAt:
+        0
+
+    },
+
+    text:
+      [],
+
+    color: {
+
+      filter:
+        "none"
+
+    }
+
+  };
+
+}
+
+
+/* ============================================================
+   GENERATE AI PLAN
+   ============================================================ */
+
+generateBtn.addEventListener(
+  "click",
+  async () => {
+
+    if (
+      selectedMedia.length ===
+      0
+    ) {
+
+      setStatus(
+        "Please select at least one photo or video.",
+        "warning"
+      );
+
+      return;
+
+    }
+
+    generateBtn.disabled =
+      true;
+
+    renderBtn.disabled =
+      true;
+
+    setStatus(
+      "🤖 Creating your AI edit plan..."
+    );
+
+    try {
+
+      const mediaMetadata =
+        await getMediaMetadata(
+          selectedMedia
+        );
+
+      let musicMetadata =
+        null;
+
+      if (selectedMusic) {
+
+        musicMetadata = {
+
+          name:
+            selectedMusic.name,
+
+          type:
+            selectedMusic.type,
+
+          size:
+            selectedMusic.size
+
+        };
+
+      }
+
+
+      const payload = {
+
+        prompt:
+          promptInput.value.trim(),
+
+        style:
+          selectedStyle,
+
+        duration:
+          Number(
+            durationInput.value
+          ),
+
+        media:
+          mediaMetadata,
+
+        music:
+          musicMetadata
+
+      };
+
+
+      const response =
+        await fetch(
+          BACKEND_URL +
+          "/generate-plan",
+          {
+
+            method:
+              "POST",
+
+            headers: {
+
+              "Content-Type":
+                "application/json"
+
+            },
+
+            body:
+              JSON.stringify(
+                payload
+              )
+
+          }
+        );
+
+
+      if (
+        !response.ok
+      ) {
+
+        let errorMessage =
+          `Backend error: ${response.status}`;
+
+        try {
+
+          const errorData =
+            await response.json();
+
+          if (
+            errorData.error
+          ) {
+
+            errorMessage =
+              errorData.error;
+
+          }
+
+        } catch {}
+
+        throw new Error(
+          errorMessage
+        );
+
+      }
+
+
+      const plan =
+        await response.json();
+
+
+      validatePlan(
+        plan
+      );
+
+
+      currentPlan =
+        plan;
+
+
+      planCard.style.display =
+        "block";
+
+      planOutput.textContent =
+        JSON.stringify(
+          plan,
+          null,
+          2
+        );
+
+
+      renderBtn.disabled =
+        false;
+
+
+      setStatus(
+        "✅ AI Edit Plan created successfully.",
+        "success"
+      );
+
+    }
+
+    catch (error) {
+
+      console.error(
+        error
+      );
+
+
+      /*
+       * Local fallback.
+       * This keeps the app usable if
+       * Gemini/backend is temporarily unavailable.
+       */
+
+      currentPlan =
+        createFallbackPlan();
+
+
+      planCard.style.display =
+        "block";
+
+      planOutput.textContent =
+        JSON.stringify(
+          currentPlan,
+          null,
+          2
+        );
+
+
+      renderBtn.disabled =
+        false;
+
+
+      setStatus(
+        "⚠️ AI server unavailable. Smart Auto Edit is ready.",
+        "warning"
+      );
+
+    }
+
+    finally {
+
+      generateBtn.disabled =
+        false;
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   LOAD IMAGE
+   ============================================================ */
+
+function loadImage(
+  file
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const img =
+        new Image();
+
+      const url =
+        URL.createObjectURL(
+          file
+        );
+
+      img.onload =
+        () => {
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          resolve(
+            img
+          );
+
+        };
+
+      img.onerror =
+        () => {
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          reject(
+            new Error(
+              "Unable to load image."
+            )
+          );
+
+        };
+
+      img.src =
+        url;
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   LOAD VIDEO
+   ============================================================ */
+
+function loadVideo(
+  file
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const video =
+        document.createElement(
+          "video"
+        );
+
+      const url =
+        URL.createObjectURL(
+          file
+        );
+
+      video.preload =
+        "auto";
+
+      video.muted =
+        true;
+
+      video.playsInline =
+        true;
+
+      video.onloadeddata =
+        () => {
+
+          resolve({
+            video:
+              video,
+
+            url:
+              url
+
+          });
+
+        };
+
+      video.onerror =
+        () => {
+
+          URL.revokeObjectURL(
+            url
+          );
+
+          reject(
+            new Error(
+              "Unable to load video."
+            )
+          );
+
+        };
+
+      video.src =
+        url;
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   COVER DRAW
+   ============================================================ */
+
+function drawCover(
+  source,
+  zoom = 1
+) {
+
+  const cw =
+    canvas.width;
+
+  const ch =
+    canvas.height;
+
+  const sw =
+    source.videoWidth ||
+    source.naturalWidth ||
+    source.width;
+
+  const sh =
+    source.videoHeight ||
+    source.naturalHeight ||
+    source.height;
+
+  if (
+    !sw ||
+    !sh
+  ) {
+
+    return;
+
+  }
+
+
+  const scale =
+    Math.max(
+      cw / sw,
+      ch / sh
+    ) * zoom;
+
+
+  const dw =
+    sw * scale;
+
+  const dh =
+    sh * scale;
+
+
+  const x =
+    (cw - dw) / 2;
+
+  const y =
+    (ch - dh) / 2;
+
+
+  ctx.drawImage(
+    source,
+    x,
+    y,
+    dw,
+    dh
+  );
+
+}
+
+
+/* ============================================================
+   FIND CLIP
+   ============================================================ */
+
+function findClip(
+  clips,
+  time
+) {
+
+  for (
+    const clip of clips
+  ) {
+
+    if (
+      time >= clip.start &&
+      time <
+        clip.start +
+        clip.duration
+    ) {
+
+      return clip;
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+/* ============================================================
+   IMAGE CACHE
+   ============================================================ */
+
+async function loadImageOnce(
+  file
+) {
+
+  if (
+    imageCache.has(file)
+  ) {
+
+    return imageCache.get(
+      file
+    );
+
+  }
+
+  const image =
+    await loadImage(
+      file
+    );
+
+  imageCache.set(
+    file,
+    image
+  );
+
+  return image;
+
+}
+
+
+/* ============================================================
+   VIDEO CACHE
+   ============================================================ */
+
+async function getRenderVideo(
+  file
+) {
+
+  if (
+    videoCache.has(file)
+  ) {
+
+    return videoCache.get(
+      file
+    );
+
+  }
+
+  const result =
+    await loadVideo(
+      file
+    );
+
+  videoCache.set(
+    file,
+    result.video
+  );
+
+  return result.video;
+
+}
+
+
+/* ============================================================
+   RENDER PREVIEW
+   ============================================================ */
+
+renderBtn.addEventListener(
+  "click",
+  async () => {
+
+    if (!currentPlan) {
+
+      setStatus(
+        "Generate an edit plan first.",
+        "warning"
+      );
+
+      return;
+
+    }
+
+
+    renderBtn.disabled =
+      true;
+
+    exportBtn.style.display =
+      "none";
+
+    previewVideo.style.display =
+      "none";
+
+
+    setStatus(
+      "🎬 Rendering preview..."
+    );
+
+
+    try {
+
+      renderedBlob =
+        await renderVideo(
+          currentPlan
+        );
+
+
+      const url =
+        URL.createObjectURL(
+          renderedBlob
+        );
+
+
+      previewVideo.src =
+        url;
+
+      previewVideo.style.display =
+        "block";
+
+      exportBtn.style.display =
+        "block";
+
+
+      setStatus(
+        "✅ Preview rendered successfully.",
+        "success"
+      );
+
+    }
+
+    catch (error) {
+
+      console.error(
+        error
+      );
+
+      setStatus(
+        "❌ Rendering failed: " +
+        error.message,
+        "error"
+      );
+
+    }
+
+    finally {
+
+      renderBtn.disabled =
+        false;
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   RENDER VIDEO
+   ============================================================ */
+
+async function renderVideo(
+  plan
+) {
+
+  if (
+    !window.MediaRecorder
+  ) {
+
+    throw new Error(
+      "MediaRecorder is not supported in this browser."
+    );
+
+  }
+
+
+  const stream =
+    canvas.captureStream(
+      30
+    );
+
+
+  let mimeType =
+    "";
+
+
+  const formats = [
+
+    "video/webm;codecs=vp9",
+
+    "video/webm;codecs=vp8",
+
+    "video/webm"
+
+  ];
+
+
+  for (
+    const format of formats
+  ) {
+
+    if (
+      MediaRecorder.isTypeSupported(
+        format
+      )
+    ) {
+
+      mimeType =
+        format;
+
+      break;
+
+    }
+
+  }
+
+
+  if (!mimeType) {
+
+    throw new Error(
+      "Browser cannot export a supported video format."
+    );
+
+  }
+
+
+  const recorder =
+    new MediaRecorder(
+      stream,
+      {
+        mimeType:
+          mimeType
+      }
+    );
+
+
+  const chunks =
+    [];
+
+
+  recorder.ondataavailable =
+    event => {
+
+      if (
+        event.data &&
+        event.data.size > 0
+      ) {
+
+        chunks.push(
+          event.data
+        );
+
+      }
+
+    };
+
+
+  const stopped =
+    new Promise(
+      resolve => {
+
+        recorder.onstop =
+          resolve;
+
+      }
+    );
+
+
+  recorder.start();
+
+
+  const totalDuration =
+    Number(
+      plan.duration
+    );
+
+
+  const startTime =
+    performance.now();
+
+
+  let lastVideoTime =
+    -1;
+
+
+  while (
+    performance.now() -
+      startTime <
+    totalDuration * 1000
+  ) {
+
+    const elapsed =
+      (
+        performance.now() -
+        startTime
+      ) / 1000;
+
+
+    const clip =
+      findClip(
+        plan.clips,
+        elapsed
+      );
+
+
+    ctx.fillStyle =
+      "black";
+
+    ctx.fillRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+
+    if (clip) {
+
+      const file =
+        selectedMedia[
+          clip.mediaIndex
+        ];
+
+
+      const localTime =
+        elapsed -
+        clip.start;
+
+
+      if (
+        file.type.startsWith(
+          "image/"
+        )
+      ) {
+
+        const image =
+          await loadImageOnce(
+            file
+          );
+
+
+        let zoom =
+          1;
+
+
+        const progress =
+          Math.min(
+            1,
+            Math.max(
+              0,
+              localTime /
+              clip.duration
+            )
+          );
+
+
+        if (
+          clip.effect ===
+          "zoom_in"
+        ) {
+
+          zoom =
+            1 +
+            0.15 *
+            progress;
+
+        }
+
+
+        if (
+          clip.effect ===
+          "zoom_out"
+        ) {
+
+          zoom =
+            1.15 -
+            0.15 *
+            progress;
+
+        }
+
+
+        drawCover(
+          image,
+          zoom
+        );
+
+      }
+
+
+      else if (
+        file.type.startsWith(
+          "video/"
+        )
+      ) {
+
+        const video =
+          await getRenderVideo(
+            file
+          );
+
+
+        const safeTime =
+          Math.max(
+            0,
+            localTime
+          );
+
+
+        if (
+          Math.abs(
+            video.currentTime -
+            safeTime
+          ) > 0.04
+        ) {
+
+          try {
+
+            video.currentTime =
+              safeTime;
+
+          } catch {}
+
+        }
+
+
+        if (
+          !video.paused
+        ) {
+
+          // already playing
+
+        } else {
+
+          try {
+
+            await video.play();
+
+          } catch {}
+
+        }
+
+
+        drawCover(
+          video,
+          1
+        );
+
+
+        lastVideoTime =
+          video.currentTime;
+
+      }
+
+    }
+
+
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          33
+        )
+    );
+
+  }
+
+
+  recorder.stop();
+
+  await stopped;
+
+
+  return new Blob(
+    chunks,
+    {
+      type:
+        mimeType
+    }
+  );
+
+}
+
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+
+exportBtn.addEventListener(
+  "click",
+  () => {
+
+    if (!renderedBlob) {
+
+      return;
+
+    }
+
+
+    const url =
+      URL.createObjectURL(
+        renderedBlob
+      );
+
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+
+    link.href =
+      url;
+
+
+    link.download =
+      "AI-Edit-Studio-Reel.webm";
+
+
+    document.body.appendChild(
+      link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    setTimeout(
+      () => {
+
+        URL.revokeObjectURL(
+          url
+        );
+
+      },
+      1000
+    );
+
+  }
+);
+
+
+</script>
+
+</body>
+  </html>
