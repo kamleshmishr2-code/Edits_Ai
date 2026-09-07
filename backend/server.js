@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 10000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY is missing");
+  console.error("GEMINI_API_KEY is missing.");
   process.exit(1);
 }
 
@@ -24,6 +24,7 @@ app.use(
   })
 );
 
+// Health check
 app.get("/", (req, res) => {
   res.json({
     name: "AI Edit Studio Backend",
@@ -31,9 +32,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// AI Edit Plan endpoint
 app.post("/generate-plan", async (req, res) => {
   try {
-
     const {
       prompt = "",
       style = "cinematic",
@@ -42,23 +43,15 @@ app.post("/generate-plan", async (req, res) => {
       music = null
     } = req.body || {};
 
-    const requestedDuration =
-      Number(duration);
+    const requestedDuration = Number(duration);
 
-    if (
-      !Array.isArray(media) ||
-      media.length === 0
-    ) {
+    if (!Array.isArray(media) || media.length === 0) {
       return res.status(400).json({
         error: "No media supplied."
       });
     }
 
-    if (
-      ![15, 30, 45, 60].includes(
-        requestedDuration
-      )
-    ) {
+    if (![15, 30, 45, 60].includes(requestedDuration)) {
       return res.status(400).json({
         error: "Invalid duration."
       });
@@ -70,31 +63,19 @@ app.post("/generate-plan", async (req, res) => {
       });
     }
 
-    const cleanMedia =
-      media.map((item, index) => ({
-        index,
-        name: String(
-          item.name ||
-          `media_${index}`
-        ),
-        type: String(
-          item.type ||
-          "unknown"
-        ),
-        duration:
-          typeof item.duration ===
-          "number"
-            ? item.duration
-            : null
-      }));
-
+    const cleanMedia = media.map((item, index) => ({
+      index,
+      name: String(item.name || `media_${index}`),
+      type: String(item.type || "unknown"),
+      duration:
+        typeof item.duration === "number"
+          ? item.duration
+          : null
+    }));
 
     const schema = {
-
       type: "object",
-
       properties: {
-
         version: {
           type: "integer"
         },
@@ -112,15 +93,10 @@ app.post("/generate-plan", async (req, res) => {
         },
 
         clips: {
-
           type: "array",
-
           items: {
-
             type: "object",
-
             properties: {
-
               mediaIndex: {
                 type: "integer"
               },
@@ -148,7 +124,6 @@ app.post("/generate-plan", async (req, res) => {
               crop: {
                 type: "string"
               }
-
             },
 
             required: [
@@ -160,17 +135,12 @@ app.post("/generate-plan", async (req, res) => {
               "speed",
               "crop"
             ]
-
           }
-
         },
 
         music: {
-
           type: "object",
-
           properties: {
-
             enabled: {
               type: "boolean"
             },
@@ -182,7 +152,6 @@ app.post("/generate-plan", async (req, res) => {
             startAt: {
               type: "number"
             }
-
           },
 
           required: [
@@ -190,19 +159,13 @@ app.post("/generate-plan", async (req, res) => {
             "volume",
             "startAt"
           ]
-
         },
 
         text: {
-
           type: "array",
-
           items: {
-
             type: "object",
-
             properties: {
-
               content: {
                 type: "string"
               },
@@ -214,7 +177,6 @@ app.post("/generate-plan", async (req, res) => {
               duration: {
                 type: "number"
               }
-
             },
 
             required: [
@@ -222,29 +184,21 @@ app.post("/generate-plan", async (req, res) => {
               "start",
               "duration"
             ]
-
           }
-
         },
 
         color: {
-
           type: "object",
-
           properties: {
-
             filter: {
               type: "string"
             }
-
           },
 
           required: [
             "filter"
           ]
-
         }
-
       },
 
       required: [
@@ -257,9 +211,7 @@ app.post("/generate-plan", async (req, res) => {
         "text",
         "color"
       ]
-
     };
-
 
     const systemInstruction = `
 You are the AI editing planner for AI Edit Studio.
@@ -272,8 +224,8 @@ The renderer will execute your plan.
 
 Rules:
 
-- aspectRatio must be exactly "9:16"
 - version must be 1
+- aspectRatio must be exactly "9:16"
 - duration must equal the requested duration
 - mediaIndex must refer only to supplied media
 - never invent media files
@@ -284,9 +236,8 @@ Rules:
 - suggest speed changes for videos when useful
 - text must be simple and timed
 - music must only be enabled when music exists
-- return ONLY JSON
+- return only JSON
 `;
-
 
     const userPrompt = `
 Requested style:
@@ -299,77 +250,43 @@ User editing prompt:
 ${prompt || "Create a polished short-form video."}
 
 Available media:
-${JSON.stringify(
-  cleanMedia,
-  null,
-  2
-)}
+${JSON.stringify(cleanMedia, null, 2)}
 
 Music:
-${JSON.stringify(
-  music,
-  null,
-  2
-)}
+${JSON.stringify(music, null, 2)}
 
 Create the best deterministic edit plan.
 `;
 
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
 
-    const response =
-      await ai.models.generateContent({
+      contents: userPrompt,
 
-        model:
-          "gemini-2.5-flash",
+      config: {
+        systemInstruction,
 
-        contents:
-          userPrompt,
+        responseMimeType: "application/json",
 
-        config: {
+        responseSchema: schema,
 
-          systemInstruction,
+        temperature: 0.2
+      }
+    });
 
-          responseMimeType:
-            "application/json",
-
-          responseSchema:
-            schema,
-
-          temperature:
-            0.2
-
-        }
-
-      });
-
-
-    const raw =
-      response.text;
-
+    const raw = response.text;
 
     if (!raw) {
-      throw new Error(
-        "Gemini returned empty response."
-      );
+      throw new Error("Gemini returned an empty response.");
     }
-
 
     let plan;
 
-
     try {
-
-      plan =
-        JSON.parse(raw);
-
+      plan = JSON.parse(raw);
     } catch {
-
-      throw new Error(
-        "Gemini returned invalid JSON."
-      );
-
+      throw new Error("Gemini returned invalid JSON.");
     }
-
 
     validatePlan(
       plan,
@@ -377,190 +294,98 @@ Create the best deterministic edit plan.
       requestedDuration
     );
 
-
     return res.json(plan);
 
-  }
-
-  catch (error) {
-
+  } catch (error) {
     console.error(
       "Generate plan error:",
       error
     );
 
     return res.status(500).json({
-      error:
-        "Unable to generate edit plan."
+      error: "Unable to generate edit plan."
     });
-
   }
-
 });
-
 
 function validatePlan(
   plan,
   mediaCount,
   requestedDuration
 ) {
-
-  if (
-    !plan ||
-    typeof plan !== "object"
-  ) {
-
-    throw new Error(
-      "Invalid plan."
-    );
-
+  if (!plan || typeof plan !== "object") {
+    throw new Error("Invalid plan.");
   }
 
-
-  if (
-    plan.version !== 1
-  ) {
-
-    throw new Error(
-      "Invalid plan version."
-    );
-
+  if (plan.version !== 1) {
+    throw new Error("Invalid plan version.");
   }
 
-
-  if (
-    plan.aspectRatio !== "9:16"
-  ) {
-
-    throw new Error(
-      "Invalid aspect ratio."
-    );
-
+  if (plan.aspectRatio !== "9:16") {
+    throw new Error("Invalid aspect ratio.");
   }
 
-
-  if (
-    Number(plan.duration) !==
-    requestedDuration
-  ) {
-
-    throw new Error(
-      "Invalid duration."
-    );
-
+  if (Number(plan.duration) !== requestedDuration) {
+    throw new Error("Invalid duration.");
   }
 
-
-  if (
-    !Array.isArray(plan.clips)
-  ) {
-
-    throw new Error(
-      "Invalid clips."
-    );
-
+  if (!Array.isArray(plan.clips)) {
+    throw new Error("Invalid clips.");
   }
 
-
-  for (
-    const clip of plan.clips
-  ) {
-
+  for (const clip of plan.clips) {
     if (
-      !Number.isInteger(
-        clip.mediaIndex
-      ) ||
+      !Number.isInteger(clip.mediaIndex) ||
       clip.mediaIndex < 0 ||
-      clip.mediaIndex >=
-        mediaCount
+      clip.mediaIndex >= mediaCount
     ) {
-
-      throw new Error(
-        "Invalid media index."
-      );
-
+      throw new Error("Invalid media index.");
     }
 
-
     if (
-      typeof clip.start !==
-        "number" ||
-      typeof clip.duration !==
-        "number" ||
+      typeof clip.start !== "number" ||
+      typeof clip.duration !== "number" ||
       clip.start < 0 ||
       clip.duration <= 0
     ) {
-
-      throw new Error(
-        "Invalid clip timing."
-      );
-
+      throw new Error("Invalid clip timing.");
     }
 
-
     if (
-      clip.start +
-        clip.duration >
-        requestedDuration +
-        0.1
+      clip.start + clip.duration >
+      requestedDuration + 0.1
     ) {
-
       throw new Error(
         "Clip exceeds video duration."
       );
-
     }
-
   }
-
 
   if (
     !plan.music ||
-    typeof plan.music !==
-      "object"
+    typeof plan.music !== "object"
   ) {
-
-    throw new Error(
-      "Invalid music plan."
-    );
-
+    throw new Error("Invalid music plan.");
   }
 
-
-  if (
-    !Array.isArray(plan.text)
-  ) {
-
-    throw new Error(
-      "Invalid text plan."
-    );
-
+  if (!Array.isArray(plan.text)) {
+    throw new Error("Invalid text plan.");
   }
-
 
   if (
     !plan.color ||
-    typeof plan.color !==
-      "object"
+    typeof plan.color !== "object"
   ) {
-
-    throw new Error(
-      "Invalid color plan."
-    );
-
+    throw new Error("Invalid color plan.");
   }
-
 }
-
 
 app.listen(
   PORT,
   "0.0.0.0",
   () => {
-
     console.log(
       `AI Edit Studio backend running on port ${PORT}`
     );
-
   }
 );
